@@ -11,16 +11,10 @@ const signin = require('./controllers/signin');
 const profile = require('./controllers/profile');
 const image = require('./controllers/image');
 
-console.log("let's see it");
 
 const db = knex({
   client: 'pg',
-  connection: {
-    host : '127.0.0.1',
-    user : process.env.DATABASE_USER,
-    password : process.env.DATABASE_PASS,
-    database : 'smart-brain'
-  }
+  connection: process.env.POSTGRES_URI
 });
 
 

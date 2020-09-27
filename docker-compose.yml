@@ -1,6 +1,7 @@
 version: "3.8"
 
 services: 
+    # backend 
     smart-brain-api:
         container_name: backend
         build: ./
@@ -10,3 +11,19 @@ services:
             - "3500:3500"
         volumes: 
             - ./:/usr/src/smart-brain-api
+        links: 
+            - postgres
+        environment: 
+            POSTGRES_URI: postgresql://sam:secret@postgres:5432/smart-brain-docker
+
+    # postgres database
+    postgres:
+        build: ./postgres
+        ports:
+            - "5432:5432"
+        environment: 
+            POSTGRES_USER: sam 
+            POSTGRES_PASSWORD: secret
+            POSTGRES_DB: smart-brain-docker
+            
+    
