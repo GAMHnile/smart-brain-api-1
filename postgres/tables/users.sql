@@ -5,7 +5,9 @@ CREATE TABLE users(
     name varchar(100) not null,
     email text unique not null,
     entries bigint DEFAULT 0,
-    joined TIMESTAMP not null
+    joined TIMESTAMP not null,
+    age int,
+    pet VARCHAR(20)
 );
 
 COMMIT;
