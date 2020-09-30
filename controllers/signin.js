@@ -1,7 +1,11 @@
 const jwt = require('jsonwebtoken');
 const redis = require("redis");
+const { promisify } = require("util");
+
 
 const redisClient = redis.createClient(process.env.REDIS_URI);
+
+const redisSetAsync = promisify(redisClient.set).bind(redisClient);
 
 const handleSignin = (db, bcrypt, req) => {
   const { email, password } = req.body;
@@ -29,19 +33,38 @@ const signToken = (email) => {
   return jwt.sign(jwtPayload, process.env.JWT_SECRET, {expiresIn: "2 days"});
 }
 
+
 const createSession = (user)=>{
   const {email, id} = user; 
   const token = signToken(email);
-  return {userId: id, token, success: "true"}
+  return redisSetAsync(token, id)
+  .then(()=>{
+    return {userId: id, token, success: "true"}
+  })
+  .catch(console.log);
 }
 
-
-const getAuthTokenId =(token)=>{console.log(token)}
+const unauthorised = "unauthorised";
+const getAuthTokenId =(token)=>{
+  return redisClient.get( token , function(err, reply) {
+    // reply is null when the key is missing
+    if(err || !reply){
+      return unauthorised
+    }else{
+      return {id: reply}
+    }
+  });
+}
 
 const signinAuthentication = (db, bcrypt)=> (req, res)=>{
   const { authorization } = req.headers;
+  if(authorization){
+    const userId = getAuthTokenId(authorization);
+    return userId === unauthorised? res.status(400).json("unauthorised"):
+      res.json(result);
+  }
 
-  return authorization? getAuthTokenId(authorization):
+  return !authorization &&
     handleSignin(db, bcrypt, req)
     .then(data=> data.id && data.email? createSession(data) : Promise.reject(data))
     .then(session=> res.send(session))
