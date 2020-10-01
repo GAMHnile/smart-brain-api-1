@@ -6,6 +6,7 @@ const { promisify } = require("util");
 const redisClient = redis.createClient(process.env.REDIS_URI);
 
 const redisSetAsync = promisify(redisClient.set).bind(redisClient);
+const redisGetAsync = promisify(redisClient.get).bind(redisClient);
 
 const handleSignin = (db, bcrypt, req) => {
   const { email, password } = req.body;
@@ -45,23 +46,28 @@ const createSession = (user)=>{
 }
 
 const unauthorised = "unauthorised";
+
 const getAuthTokenId =(token)=>{
-  return redisClient.get( token , function(err, reply) {
-    // reply is null when the key is missing
-    if(err || !reply){
-      return unauthorised
+  return redisGetAsync(token)
+  .then(reply=>{
+    if(!reply){
+     return unauthorised
     }else{
       return {id: reply}
     }
-  });
+  }).catch(console.log);
+
 }
 
 const signinAuthentication = (db, bcrypt)=> (req, res)=>{
   const { authorization } = req.headers;
   if(authorization){
-    const userId = getAuthTokenId(authorization);
-    return userId === unauthorised? res.status(400).json("unauthorised"):
-      res.json(result);
+    getAuthTokenId(authorization)
+    .then(data=>{
+      data === unauthorised? res.status(400).json("unauthorised"):
+      res.json(data);
+    })
+    .catch(err=>  res.status(400).json("An error occured"))
   }
 
   return !authorization &&
