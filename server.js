@@ -10,6 +10,9 @@ const register = require('./controllers/register');
 const signin = require('./controllers/signin');
 const profile = require('./controllers/profile');
 const image = require('./controllers/image');
+const signout= require('./controllers/signout');
+
+const auth = require('./middlewares/authorization');
  
 
 const db = knex({
@@ -27,11 +30,12 @@ app.use(bodyParser.json());
 
 app.get('/', (req, res)=> { res.send("Hey its running from docker now oh") })
 app.post('/signin', signin.signinAuthentication(db, bcrypt))
+app.delete('/signout', auth.requireAuth, (req,res)=>{ signout.signoutUser(req, res)})
 app.post('/register', (req, res) => { register.handleRegister(req, res, db, bcrypt) })
-app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db)})
-app.put('/profile/:id', (req,res)=>{profile.handleProfileUpdate(req,res, db)})
-app.put('/image', (req, res) => { image.handleImage(req, res, db)})
-app.post('/imageurl', (req, res) => { image.handleApiCall(req, res)})
+app.get('/profile/:id', auth.requireAuth, (req, res) => { profile.handleProfileGet(req, res, db)})
+app.put('/profile/:id', auth.requireAuth, (req,res)=>{profile.handleProfileUpdate(req,res, db)})
+app.put('/image', auth.requireAuth, (req, res) => { image.handleImage(req, res, db)})
+app.post('/imageurl', auth.requireAuth, (req, res) => { image.handleApiCall(req, res)})
 
 app.listen(3500, ()=> {
   console.log('app is running on port 3500');
